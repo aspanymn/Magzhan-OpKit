@@ -1,11 +1,15 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 
 @Injectable()
 export class TasksService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+  ) {}
 
   async getTasks(userId: number) {
     return this.prisma.task.findMany({
@@ -31,19 +35,23 @@ export class TasksService {
   }
 
   async createTask(userId: number, dto: CreateTaskDto) {
-    return this.prisma.task.create({
+    const task = await this.prisma.task.create({
       data: {
         title: dto.title,
         description: dto.description,
         userId,
       },
     });
+
+    this.eventEmitter.emit('task.created', task);
+
+    return task;
   }
 
   async updateTask(id: number, userId: number, dto: UpdateTaskDto) {
     const task = await this.getTask(id, userId);
 
-    return this.prisma.task.update({
+    const updatedTask = await this.prisma.task.update({
       where: { id },
       data: {
         title: dto.title ?? task.title,
@@ -51,13 +59,21 @@ export class TasksService {
         status: dto.status ?? task.status,
       },
     });
+
+    this.eventEmitter.emit('task.updated', updatedTask);
+
+    return updatedTask;
   }
 
   async deleteTask(id: number, userId: number) {
     await this.getTask(id, userId);
 
-    return this.prisma.task.delete({
+    const deletedTask = await this.prisma.task.delete({
       where: { id },
     });
+
+    this.eventEmitter.emit('task.deleted', deletedTask);
+
+    return deletedTask;
   }
 }
