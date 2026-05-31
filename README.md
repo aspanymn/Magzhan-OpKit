@@ -110,7 +110,7 @@ cd backend
 
 ```env
 DATABASE_URL="postgresql://opkit_user:opkit_password@localhost:5432/opkit_db"
-JWT_SECRET="your-secret-key-change-this-in-production"
+JWT_SECRET="opkit-test-secret-key"
 JWT_EXPIRES_IN="24h"
 PORT=3001
 NODE_ENV="development"
